@@ -1,0 +1,776 @@
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+import pygame
+from PIL import Image
+from math import atan2
+from time import sleep,time
+class case:
+
+
+    def __init__(self,visite):
+
+        self.visite = visite
+
+    def est_visite(self):
+
+        self.visite = True
+
+
+def solve(n): #n >2
+
+    Laby_case = np.array([case(False) for i in range(n) for j in range(n)])
+    Laby_case = np.reshape(Laby_case , (n,n))
+    Mur_horizontaux = np.array([False for i in range(n-1) for j in range(n)])
+    Mur_verticaux = np.array([False for i in range(n) for j in range(n-1)])
+    Mur_horizontaux= np.reshape(Mur_horizontaux,(n-1,n))
+    Mur_verticaux = np.reshape(Mur_verticaux,(n,n-1))
+    Laby_case[0][0].est_visite()
+    Pile = []
+    c_c = [0,0]
+    i=1
+    while check_visit(Laby_case):
+        voisin_case = voisin_proche(c_c,Laby_case)
+        if voisin_case != []:
+            r_pos = random.sample(voisin_case,1)[0]
+
+            Pile.append(c_c)
+            if r_pos[0]==c_c[0]:
+                Mur_verticaux[r_pos[0]][min(c_c[1],r_pos[1])] = True
+            if r_pos[1]==c_c[1]:
+                Mur_horizontaux[min(r_pos[0],c_c[0])][r_pos[1]] = True
+            c_c = r_pos
+            Laby_case[c_c[0]][c_c[1]].est_visite()
+        elif Pile!=[]:
+
+           c_c =Pile.pop()
+
+    return Mur_verticaux,Mur_horizontaux
+
+def voisin_proche(position,Laby_case):
+
+    n=len(Laby_case)
+    x,y = position
+    liste_candidat =[]
+
+    if x == 0 or x == n-1:
+        nouv_x = int(1+ x* (n-3)/(n-1))
+        if y ==0 or y==n-1:
+            nouv_y =  int(1+ y * (n-3)/(n-1))
+            liste_candidat.append([nouv_x,y])
+            liste_candidat.append([x,nouv_y])
+        else:
+            liste_candidat.append([x,y-1])
+            liste_candidat.append([x,y+1])
+            liste_candidat.append([nouv_x,y])
+
+    elif y==0 or y==n-1:
+        if x != 0 and x != n-1:
+            nouv_y =  int(1+ y * (n-3)/(n-1))
+            liste_candidat.append([x-1,y])
+            liste_candidat.append([x+1,y])
+            liste_candidat.append([x,nouv_y])
+
+    else:
+
+        liste_candidat.append([x-1,y])
+        liste_candidat.append([x+1,y])
+        liste_candidat.append([x,y-1])
+        liste_candidat.append([x,y+1])
+
+    liste_voisin = [candidat for candidat in liste_candidat if Laby_case[candidat[0]][candidat[1]].visite ==False ]
+
+    return liste_voisin
+
+def check_visit(Liste):
+
+    for liste_case in Liste:
+        for case in liste_case:
+
+            if case.visite == False:
+
+                return True
+
+    return False
+
+def Laby():
+    n=int(input("Entrer la taille du labyrinthe : "))
+    M_v,M_h = solve(n)
+    (fond,Im_w,Liste_mur,Liste_mur_simple)=draw_laby(n,M_h,M_v)
+    fond.show()
+
+
+def draw_laby(n,M_h,M_v):
+
+    M_h = np.array(M_h)
+    M_v = np.array(M_v)
+
+    sol = Image.open('C:/Users/max/OneDrive/Documents/python/projets/Laby/sol1.jpg')
+    mur = Image.open('C:/Users/max/OneDrive/Documents/python/projets/Laby/mur1.jpg')
+    Im_w , Im_h = sol.size
+    back = Image.new ( 'RGB' , ((3*n+1) * Im_w, (3*n+1) * Im_h) ,(0,0,0) )
+
+    Liste_mur = []
+    Liste_mur_simple = np.zeros((3*n+1,3*n+1))
+
+    for i in range(3*n+1):
+        for j in range(3*n+1):
+
+            back.paste(sol ,(i*Im_w,j * Im_h))
+
+            if (i,j) not in [(0,1),(0,2),(3*n,3*n-1),(3*n,3*n-2)]:
+
+                if i ==3*n  or i == 0:
+
+                    back.paste(mur,(i*Im_w,j *Im_h))
+
+                    Liste_mur.append((i*Im_w,j *Im_h))
+
+                    Liste_mur_simple[j][i]=1
+
+                if j ==3* n or j == 0 :
+
+                    back.paste(mur,(i*Im_w,j *Im_h))
+
+                    Liste_mur.append((i*Im_w,j *Im_h))
+
+                    Liste_mur_simple[j][i]=1
+
+
+    for i in range(n):
+        for j in range(n):
+
+            if i != n-1:
+
+                if M_h[i][j] == False:
+
+                    back.paste(mur, ((3* (j) )*Im_w, 3*(1+i)*Im_h))
+                    back.paste(mur, ((3* (j) +1 )*Im_w, 3*(1+i)*Im_h))
+                    back.paste(mur, ((3* (j) +2 )*Im_w, 3*(1+i)*Im_h))
+                    back.paste(mur, ((3* (j) +3 )*Im_w, 3*(1+i)*Im_h))
+
+                    Liste_mur.append(((3* (j) )*Im_w, 3*(1+i)*Im_h))
+                    Liste_mur.append( ((3* (j) +1 )*Im_w, 3*(1+i)*Im_h))
+                    Liste_mur.append(((3* (j) +2 )*Im_w, 3*(1+i)*Im_h))
+                    Liste_mur.append(((3* (j) +3 )*Im_w, 3*(1+i)*Im_h))
+
+                    Liste_mur_simple[3*j][3*(1+i)] = 1
+                    Liste_mur_simple[3*j+1][3*(1+i)] = 1
+                    Liste_mur_simple[3*j+2][3*(1+i)] = 1
+                    Liste_mur_simple[3*j+3][3*(1+i)] = 1
+
+
+
+            if j!= n-1:
+
+                if M_v[i][j] ==False:
+
+                    back.paste(mur, (3*(j +1) * Im_w , (3*(i)) * Im_h))
+                    back.paste(mur, (3*(j +1) * Im_w , (3*(i)+1) * Im_h))
+                    back.paste(mur, (3*(j +1) * Im_w , (3*(i)+2) * Im_h))
+                    back.paste(mur, (3*(j +1) * Im_w , (3*(i)+3) * Im_h))
+
+                    Liste_mur.append((3*(j +1) * Im_w , (3*(i)) * Im_h))
+                    Liste_mur.append((3*(j +1) * Im_w , (3*(i)+1) * Im_h))
+                    Liste_mur.append((3*(j +1) * Im_w , (3*(i)+2) * Im_h))
+                    Liste_mur.append((3*(j +1) * Im_w , (3*(i)+3) * Im_h))
+
+                    Liste_mur_simple[3*(j +1)][3*(i)] = 1
+                    Liste_mur_simple[3*(j +1)][3*(i)+1] = 1
+                    Liste_mur_simple[3*(j +1)][3*(i)+2] = 1
+                    Liste_mur_simple[3*(j +1)][3*(i)+3] = 1
+
+
+    back.paste(sol , (0,Im_h))
+    back.paste(sol , (0,2*Im_h))
+    back.paste(sol , (3*n * Im_w , (3*n-1) * Im_w))
+    back.paste(sol , (3*n * Im_w , (3*n-2) * Im_w))
+
+    Liste_mur_simple=np.rot90(Liste_mur_simple,k=1)
+    Liste_mur_simple=np.flipud(Liste_mur_simple)
+
+    Liste_mur_simple[0][1],Liste_mur_simple[0][2],Liste_mur_simple[3*n][3*n-1],Liste_mur_simple[3*n][3*n-2] = 1,1,1,1
+
+
+    return back , Im_w , Liste_mur,Liste_mur_simple
+
+
+
+
+## game
+
+
+class player :
+
+    def __init__(self,Taille_screen,position,vel, taille,VIE,Batterie):
+
+        self.Taille_screen = Taille_screen
+        self.Vie = VIE
+        self.Batterie = Batterie
+        self.taille= taille
+        self.x,self.y =position
+        self.vel = vel
+
+class battery:
+
+    def __init__(self,Taille_surf,taille):
+
+        self.Taille_surf= Taille_surf
+        self.taille = taille
+
+    def placer_rdm(self,Liste_mur_simple,Liste_mur,Im_w):
+
+        self.r_x = random.randint(self.Taille_surf//4,self.Taille_surf-2*Im_w)
+        self.r_y = random.randint(self.Taille_surf//4,self.Taille_surf-2*Im_w)
+        self.rect_bat = pygame.Rect(self.r_x, self.r_y , self.taille[0],self.taille[1])
+
+        while check_coll(Liste_mur,self.rect_bat,(0,0),Im_w):
+
+            self.r_x = random.randint(self.Taille_surf//6,self.Taille_surf-2*Im_w)
+            self.r_y = random.randint(self.Taille_surf//6,self.Taille_surf-2*Im_w)
+            self.rect_bat = pygame.Rect(self.r_x, self.r_y , self.taille[0],self.taille[1])
+
+        self.position = [self.r_x, self.r_y]
+
+
+    def coll_joueur(self,camera,target,taille_target):
+
+        cam_x,cam_y = camera
+        rect_bat = pygame.Rect( cam_x +self.position[0], cam_y +self.position[1],self.taille[0],self.taille[1])
+        rect_target = pygame.Rect(target[0]- taille_target, - taille_target +target[1],taille_target,taille_target)
+
+        return rect_target.colliderect(rect_bat)
+
+class ghost:
+
+    def __init__(self,taille,Taille_surf,vel,texture,texture_hit):
+
+        self.taille = taille
+        self.Taille_surf = Taille_surf
+        self.vel = vel
+        self.texture=texture
+        self.count_dmg = 30
+        self.count_smoke = 30
+        self.texture_hit = texture_hit
+        self.is_active = True
+        self.is_active_cpt = 300
+    def placer_rdm(self,Liste_mur_simple,Liste_mur,Im_w):
+
+        self.r_x = random.randint(self.Taille_surf//4,self.Taille_surf-2*Im_w)
+        self.r_y = random.randint(self.Taille_surf//4,self.Taille_surf-2*Im_w)
+        self.rect_ghost = pygame.Rect(self.r_x, self.r_y , self.taille,self.taille)
+        while check_coll(Liste_mur,self.rect_ghost,(0,0),Im_w):
+
+            self.r_x = random.randint(self.Taille_surf//6,self.Taille_surf-2*Im_w)
+            self.r_y = random.randint(self.Taille_surf//6,self.Taille_surf-2*Im_w)
+            self.rect_ghost = pygame.Rect(self.r_x, self.r_y , self.taille,self.taille)
+
+        self.position = [self.r_x, self.r_y]
+
+        self.direction = random.sample([[0,1],[0,-1],[1,0],[-1,0]],1)[0]
+
+    def get_bound(self,Liste_mur_simple,Im_w):
+
+        if self.direction[0] ==0:
+
+            x_op = self.position[0]
+
+            indice_j = x_op//Im_w
+
+            Column = Liste_mur_simple[:,indice_j]
+
+            self.min_ = Im_w
+            self.max_ = self.Taille_surf
+
+            for cpt in range(1,len(Column)):
+
+                if cpt*Im_w < self.position[0] and Column[cpt]==1:
+
+                    self.min_= cpt * Im_w
+
+                if cpt*Im_w > self.position[0] and cpt*Im_w< self.max_ and Column[cpt]==1:
+
+                    self.max_ = cpt*Im_w
+
+            self.bounds=[(self.min_) + Im_w ,(self.max_)-self.taille]
+
+        if self.direction[1]==0:
+
+            y_op = self.position[1]
+
+            indice_i = y_op // Im_w
+
+            Column = Liste_mur_simple[indice_i]
+
+            self.min_ = Im_w
+            self.max_ = self.Taille_surf
+
+            for cpt in range(1,len(Column)):
+
+                if cpt*Im_w < self.position[1] and Column[cpt]==1:
+
+                    self.min_ = cpt*Im_w
+
+                if cpt*Im_w > self.position[1] and cpt*Im_w< self.max_ and Column[cpt]==1:
+
+                    self.max_= cpt*Im_w
+
+            self.bounds=[self.min_ + Im_w,self.max_-self.taille]
+
+
+    def check_bound(self,Liste_mur_simple,Liste_mur,Im_w):
+
+        if self.direction[0]!=0:
+
+            while self.position[0] > self.bounds[1] or self.position[0] < self.bounds[0] or abs(self.bounds[0] -self.bounds[1]) < Im_w:
+
+                self.placer_rdm(Liste_mur_simple,Liste_mur,Im_w)
+                self.get_bound(Liste_mur_simple,Im_w)
+
+        if self.direction[1]!=0:
+
+            while self.position[1] > self.bounds[1] or self.position[1] < self.bounds[0] or abs(self.bounds[0] -self.bounds[1]) < Im_w:
+
+                self.placer_rdm(Liste_mur_simple,Liste_mur,Im_w)
+                self.get_bound(Liste_mur_simple,Im_w)
+
+
+    def update(self):
+
+        self.last_pos = self.position
+
+        if self.direction[0]!=0:
+
+            self.indice = 0
+
+        else:
+
+            self.indice =1
+
+        self.position[0] += self.direction[0] * self.vel
+        self.position[1] += self.direction[1] * self.vel
+
+        if self.position[self.indice] < self.bounds[0] or self.position[self.indice] > self.bounds[1]:
+
+            self.position = self.last_pos
+            self.direction[0] = - self.direction[0]
+            self.direction[1] = - self.direction[1]
+
+
+    def coll_joueur(self,camera,target,taille_target):
+
+        cam_x,cam_y = camera
+        rect_ghost = pygame.Rect( cam_x +self.position[0], cam_y +self.position[1],self.taille,self.taille)
+        rect_target = pygame.Rect(target[0]- taille_target, - taille_target +target[1],taille_target,taille_target)
+
+        return rect_target.colliderect(rect_ghost)
+
+
+    def angle_joueur(self,target,taille_target,L=[0,45,90,135,180,225,270,315]):
+
+        self.y =(self.position[1] + self.taille) -(target[1] +taille_target)
+        self.x =(self.position[0] + self.taille) -(target[0] +taille_target)
+        self.theta = (atan2(self.x,self.y) * (180/np.pi))%360
+
+        return L.index(min(L, key=lambda x:abs(x-self.theta)))
+
+    def prend_dmg(self):
+
+
+        if self.count_dmg>0:
+
+            self.count_dmg =self.count_dmg - 1
+
+            return False
+
+        elif self.count_smoke > 0 :
+
+            self.texture = self.texture_hit
+            self.count_smoke -=1
+
+            return False
+
+        elif self.count_smoke ==0:
+
+            return True
+
+
+
+def run_game(n):
+
+    M_v,M_h = solve(n)
+    fond,Im_w,Liste_mur,Liste_mur_simple = draw_laby(n,M_h,M_v)
+    game(n,fond,Im_w,Liste_mur,Liste_mur_simple)
+
+
+def game(n,fond,Im_w,Liste_mur,Liste_mur_simple):
+
+
+    ##données
+    global ghost
+
+    pygame.init()
+
+    mode = fond.mode
+    size = fond.size
+    data = fond.tobytes()
+
+
+    Taille_screen = 500
+    screen= pygame.display.set_mode((Taille_screen,Taille_screen))
+
+    surface = pygame.image.fromstring(data, size, mode).convert()
+    player_img_N = pygame.image.load('C:/Users/max/OneDrive/Documents/python/projets/Laby/N.png').convert_alpha()
+    player_img_S = pygame.image.load('C:/Users/max/OneDrive/Documents/python/projets/Laby/S.png').convert_alpha()
+    player_img_E = pygame.image.load('C:/Users/max/OneDrive/Documents/python/projets/Laby/E.png').convert_alpha()
+    player_img_O = pygame.image.load('C:/Users/max/OneDrive/Documents/python/projets/Laby/O.png').convert_alpha()
+    player_img_NE = pygame.image.load('C:/Users/max/OneDrive/Documents/python/projets/Laby/NE.png').convert_alpha()
+    player_img_NO = pygame.image.load('C:/Users/max/OneDrive/Documents/python/projets/Laby/NO.png').convert_alpha()
+    player_img_SE = pygame.image.load('C:/Users/max/OneDrive/Documents/python/projets/Laby/SE.png').convert_alpha()
+    player_img_SO = pygame.image.load('C:/Users/max/OneDrive/Documents/python/projets/Laby/SO.png').convert_alpha()
+    L_texture_player = [player_img_S,player_img_SE,player_img_E,player_img_NE,player_img_N,player_img_NO,player_img_O,player_img_SO]
+
+    ghost_img_1 = pygame.image.load('C:/Users/max/OneDrive/Documents/python/projets/Laby/G_1.png').convert_alpha()
+    ghost_img_2 = pygame.image.load('C:/Users/max/OneDrive/Documents/python/projets/Laby/G_2.png').convert_alpha()
+    ghost_img_3 = pygame.image.load('C:/Users/max/OneDrive/Documents/python/projets/Laby/G_3.png').convert_alpha()
+
+    smoke_img = pygame.image.load('C:/Users/max/OneDrive/Documents/python/projets/Laby/smoke.png').convert_alpha()
+
+    heart = pygame.image.load('C:/Users/max/OneDrive/Documents/python/projets/Laby/heart.png').convert_alpha()
+    taille_heart = heart.get_size()[0]
+
+    batterie_img = pygame.image.load('C:/Users/max/OneDrive/Documents/python/projets/Laby/batterie.png').convert_alpha()
+    batterie_icon= pygame.image.load('C:/Users/max/OneDrive/Documents/python/projets/Laby/bat_icon.png').convert_alpha()
+    taille_icon = batterie_icon.get_size()
+
+    Taille_battery = batterie_img.get_size()
+
+    ghost_img_1.set_alpha(200)
+    ghost_img_2.set_alpha(200)
+    ghost_img_3.set_alpha(200)
+
+    L_texture_ghost = [ghost_img_1,ghost_img_2,ghost_img_3]
+    Taille_ghost = ghost_img_1.get_size()[0]
+
+    Taille_surf = surface.get_rect().size[0]
+
+    ##jeu
+    CLOCK =pygame.time.Clock()
+    FPS = 60
+    running= True
+    cam_x=0
+    cam_y=0
+    font = pygame.font.SysFont("arial", 72)
+    font_ = pygame.font.SysFont("arial" , 24)
+
+    ##joueur
+    vel = 3
+    Vie=3
+    Batterie = 1000
+    taille = player_img_N.get_size()[0]
+    pos_joueur = (Taille_screen //2 - taille - Im_w, Taille_screen //2 - taille - Im_w)
+    player_ = player(Taille_screen,pos_joueur,vel,taille,Vie,Batterie)
+    indice = 0
+
+
+    ##batteries
+
+    N_bat = n//2
+
+    Liste_bat =[]
+
+    for cpt in range(N_bat):
+
+        bat=battery(Taille_surf,Taille_battery)
+        bat.placer_rdm(Liste_mur_simple,Liste_mur,Im_w)
+
+        Liste_bat.append(bat)
+
+    ##lumière
+    Night_color = (27,27,27)
+    fog = pygame.Surface((Taille_screen,Taille_screen))
+    fog.fill(Night_color)
+    light_mask = pygame.image.load('C:/Users/max/OneDrive/Documents/python/projets/Laby/Lampe1.png').convert_alpha()
+    light_size = light_mask.get_size()
+    last_angle = 0
+    L_angle =[0,45,90,135,180,225,270,315]
+    L_dir = [[0,1],[1,1],[1,0],[1,-1],[0,-1],[-1,-1],[-1,0],[-1,+1]]
+    last_indice_direction = 0
+
+
+    ##ghost
+    N_ghost = 3*n
+    vel_ghost = 1
+    Liste_ghost= []
+    pixel_ref = Night_color[0]
+    for cpt in range(N_ghost):
+
+        r_ind = random.randint(0,2)
+        ghost_ = ghost(Taille_ghost,Taille_surf,vel_ghost,L_texture_ghost[r_ind],smoke_img)
+        ghost_.placer_rdm(Liste_mur_simple,Liste_mur,Im_w)
+        ghost_.get_bound(Liste_mur_simple,Im_w)
+        ghost_.check_bound(Liste_mur_simple,Liste_mur,Im_w)
+        Liste_ghost.append(ghost_)
+
+
+    T_deb = time()
+   ##jeu
+    while running == True:
+
+        #def para joueur
+        standing = False
+        dx,dy=0,0
+        last_pos_x,last_pos_y = player_.x,player_.y
+        last_cam_x, last_cam_y = cam_x,cam_y
+        Light_on = False
+        direction=[0,0]
+        screen.fill((0,0,0))
+
+        ##get inputs
+        pygame.event.pump()
+        keys = pygame.key.get_pressed()
+
+        if (keys[pygame.K_LCTRL]):
+
+            standing = True
+
+        if (keys[pygame.K_w]):
+
+            if cam_y < 0 and player_.y <Taille_screen //2 and standing == False:
+                cam_y += player_.vel
+
+            elif player_.y  - player_.taille > player_.vel and standing ==False:
+                dy =- player_.vel
+
+            direction[1] -=1
+
+        if (keys[pygame.K_s]):
+
+            if cam_y - Taille_screen > -Taille_surf and player_.y >Taille_screen //2 and standing == False:
+                cam_y-= player_.vel
+
+            elif player_.y + player_.taille < Taille_screen - player_.vel and standing == False:
+                dy = + player_.vel
+
+            direction[1] +=1
+
+        if (keys[pygame.K_a]):
+
+            if cam_x < 0 and player_.x <Taille_screen //2 and standing == False:
+                cam_x += player_.vel
+
+            elif player_.x - player_.taille > player_.vel and standing == False :
+                dx =-player_.vel
+
+            direction[0] -=1
+
+        if (keys[pygame.K_d]):
+
+            if cam_x - Taille_screen > -Taille_surf and player_.x >Taille_screen //2 and standing == False:
+                cam_x -= player_.vel
+
+            elif player_.x + player_.taille < Taille_screen - player_.vel and standing == False :
+                dx = player_.vel
+
+            direction[0]+=1
+
+        if (keys[pygame.K_SPACE]) and player_.Batterie > 0 :
+
+            Light_on = True
+            player_.Batterie -=1
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                outcome=False
+
+        ##update postion joueur
+        player_.x += dx
+        player_.y += dy
+
+        ##check collision joueur
+        rect_joueur = pygame.Rect(player_.x- player_.taille,player_.y - player_.taille,(player_.taille),(player_.taille))
+
+        if check_coll(Liste_mur,rect_joueur,(cam_x,cam_y),Im_w) == True:
+
+            player_.x = last_pos_x
+            player_.y = last_pos_y
+            cam_x=last_cam_x
+            cam_y =last_cam_y
+
+
+        ##check espace laby
+        if player_.x > Taille_screen - int(Im_w) and player_.y > Taille_screen - 3*Im_w:
+
+            running = False
+            outcome =True
+
+        ##render sol/joueur
+
+        screen.blit(surface,(cam_x,cam_y))
+        if direction != [0,0]:
+
+            indice_direction = L_dir.index(direction)
+            last_indice_direction = indice_direction
+
+        screen.blit(L_texture_player[last_indice_direction],(player_.x-player_.taille,player_.y-player_.taille))
+
+
+        ##render fog/joueur
+
+        L_light_pos =[(player_.x - 3*player_.taille ,player_.y - int(0.6 * player_.taille)) , (player_.x - int(2.3*player_.taille), player_.y -int(2.3*player_.taille)) , (player_.x-int(player_.taille *0.6), player_.y - (3*player_.taille)) , (player_.x-int(player_.taille * 2.3),player_.y - int(player_.taille * 7.1)) , (player_.x - player_.taille * 3,player_.y - int(player_.taille *7.4) ) ,(player_.x - int(7.2*player_.taille), player_.y -7*player_.taille) , (player_.x - int(7.4*player_.taille),player_.y - 3*player_.taille) ,(player_.x-int(7.2*player_.taille),player_.y -int(2.3*player_.taille))]
+
+
+        fog.fill(Night_color)
+
+        if Light_on == True:
+            if direction !=[0,0]:
+                indice_light = L_dir.index(direction)
+                angle = L_angle[indice_light]
+                pos_light = L_light_pos[indice_light]
+                last_angle = angle
+            else:
+                angle = last_angle
+                pos_light =  L_light_pos[L_angle.index(last_angle)]
+
+
+            New_light = pygame.transform.rotate(light_mask,angle)
+            fog.blit(New_light,pos_light)
+
+   ##render ghost
+
+        for ghost_ in Liste_ghost:
+
+            if ghost_.is_active_cpt ==300:
+
+                ghost_.is_active = True
+
+            else:
+
+                ghost_.is_active_cpt +=1
+            ghost_.update()
+
+            screen.blit(ghost_.texture,(cam_x + ghost_.position[0],cam_y + ghost_.position[1]))
+
+            if ghost_.coll_joueur((cam_x,cam_y),[player_.x,player_.y],player_.taille) and ghost_.is_active ==True:
+                player_.Vie -= 1
+                print( player_.Vie)
+                ghost_.is_active = False
+                ghost_.is_active_cpt=0
+                if player_.Vie  == 0:
+
+                    running = False
+                    outcome=False
+
+
+
+    ##render batteries
+
+
+        for bat in Liste_bat:
+
+            screen.blit(batterie_img ,(bat.position[0] + cam_x,bat.position[1] + cam_y))
+
+            if bat.coll_joueur((cam_x,cam_y),(player_.x,player_.y),player_.taille):
+
+                if (Batterie - player_.Batterie) <250:
+                    player_.Batterie += 250
+
+                else :
+                    player_.Batterie = Batterie
+
+                Liste_bat.remove(bat)
+
+        screen.blit(fog,(0,0),special_flags= pygame.BLEND_MULT)
+
+    ##check lampe
+        for ghost_ in Liste_ghost:
+
+            if Light_on == True and ghost_.position[0] + cam_x+ +Taille_ghost//2 < Taille_screen and ghost_.position[1] + cam_y +Taille_ghost//2< Taille_screen and ghost_.position[0] + cam_x+ +Taille_ghost//2 >0 and ghost_.position[1] + cam_y +Taille_ghost//2 > 0 :
+
+                pixel = screen.get_at((cam_x + ghost_.position[0] +Taille_ghost//2,cam_y + ghost_.position[1] +Taille_ghost//2))
+
+
+                pixel_moy = (pixel[0]+pixel[1]+pixel[2])/3
+
+                if pixel_moy > pixel_ref * 1.5 or pixel_moy < 0.5 * pixel_ref :
+                    res = ghost_.prend_dmg()
+
+                    if res == True:
+
+                        Liste_ghost.remove(ghost_)
+
+    ##icon
+
+
+        screen.blit(batterie_icon,(0,0),area = (0,0,int(taille_icon[0] * player_.Batterie /Batterie), taille_icon[1]))
+        if player_.Vie >=1:
+
+            screen.blit(heart,(2,5 + taille_icon[1]))
+
+            if player_.Vie>=2:
+
+                    screen.blit(heart,(4+taille_heart,5 + taille_icon[1]))
+
+                    if player_.Vie >= 3:
+
+                        screen.blit(heart,(6+2*taille_heart,5+ taille_icon[1]))
+        pygame.display.update()
+        CLOCK.tick(FPS)
+    ##fin
+
+    T_fin = time()
+    D_T_min = int((T_fin-T_deb)//60)
+    D_T_sec = int((T_fin-T_deb)%60)
+
+    if outcome ==False:
+
+        screen.fill((0,0,0))
+        text_def = font.render('GAME OVER', True, (255, 0, 0))
+        if D_T_min !=0:
+            text_temps = font_.render('Temps = ' + str(D_T_min) +" min "+str(D_T_sec) +"s",True,(255,0,0))
+        else:
+            text_temps = font_.render('Temps = ' +str(D_T_sec) +"s",True,(255,0,0))
+        screen.blit(text_def,(int(Taille_screen/2) - text_def.get_width() // 2, int(Taille_screen/2) - text_def.get_height() // 2))
+        screen.blit(text_temps,(int(Taille_screen/2) -text_temps.get_width() // 2, int(Taille_screen/2)+ text_def.get_height()-text_temps.get_height()// 2))
+        pygame.display.update()
+        sleep(2)
+        pygame.quit()
+
+    if outcome == True:
+
+        screen.fill((0,0,0))
+        text_vict = font.render('VICTOIRE', True, (255, 0, 0))
+        if D_T_min !=0:
+            text_temps = font_.render('Temps = ' + str(D_T_min) +" min "+str(D_T_sec) +"s",True,(255,0,0))
+        else:
+            text_temps = font_.render('Temps = ' +str(D_T_sec) +"s",True,(255,0,0))
+        screen.blit(text_vict,(int(Taille_screen/2) - text_vict.get_width() // 2, int(Taille_screen/2) - text_vict.get_height() // 2))
+        screen.blit(text_temps,(int(Taille_screen/2)-text_temps.get_width() // 2, int(Taille_screen/2)+text_vict.get_height() -text_temps.get_height()// 2))
+        pygame.display.update()
+        sleep(2)
+        pygame.quit()
+
+
+
+def check_coll(Liste_mur, rect_joueur,camera,Im_w):
+
+    rep = False
+    cam_x,cam_y = camera
+
+    for mur in Liste_mur:
+         Rect_Mur = pygame.Rect( cam_x + mur[0] ,cam_y + mur[1] , Im_w ,Im_w)
+
+         if rect_joueur.colliderect(Rect_Mur):
+
+             rep = True
+
+    return rep
+
+def check_coll_bar():
+    pass
+
+if __name__ =='__main__':
+    n=int(input("Taille du labyrinthe : "))
+    run_game(n)
+
